@@ -55,3 +55,6 @@ keys/*
 logs/*
 work/*
 CVS
+pass
+bin/findstamps
+bin/unstamp

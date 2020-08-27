@@ -1,0 +1,537 @@
+Index: src/COPYRIGHT
+===================================================================
+RCS file: /home/cvs/src/COPYRIGHT,v
+retrieving revision 1.5
+retrieving revision 1.5.2.1
+diff -u -r1.5 -r1.5.2.1
+--- src/COPYRIGHT	31 Dec 2006 22:42:40 -0000	1.5
++++ src/COPYRIGHT	1 Jan 2008 17:06:03 -0000	1.5.2.1
+@@ -1,11 +1,11 @@
+ # $FreeBSD: src/COPYRIGHT,v 1.6.2.1 2006/02/08 09:11:57 ru Exp $
+-# $MidnightBSD: src/COPYRIGHT,v 1.5 2006/12/31 22:42:40 laffer1 Exp $
++# $MidnightBSD: src/COPYRIGHT,v 1.5.2.1 2008/01/01 17:06:03 laffer1 Exp $
+ #	@(#)COPYRIGHT	8.2 (Berkeley) 3/21/94
+ 
+ The compilation of software known as MidnightBSD is distrubuted under
+ the following terms:
+ 
+-Copyright (C) 2006-2007 The MidnightBSD Project. All rights reserved.
++Copyright (C) 2006-2008 The MidnightBSD Project. All rights reserved.
+ 
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions
+Index: src/UPDATING
+===================================================================
+RCS file: /home/cvs/src/UPDATING,v
+retrieving revision 1.20.2.7
+retrieving revision 1.20.2.8
+diff -u -r1.20.2.7 -r1.20.2.8
+--- src/UPDATING	4 Nov 2007 13:52:12 -0000	1.20.2.7
++++ src/UPDATING	19 Apr 2008 17:19:41 -0000	1.20.2.8
+@@ -3,6 +3,9 @@
+ Items affecting the mports and packages system can be found in
+ /usr/mports/UPDATING. 
+ 
++20080419:
++	Fix a security issue with OpenSSH as reported by the Debian project.
++
+ 20071104:
+ 	0.1.1-RELEASE
+ 
+@@ -418,4 +421,4 @@
+ this document.
+ 
+ $FreeBSD: src/UPDATING,v 1.416.2.18 2006/02/22 11:51:57 yar Exp $
+-$MidnightBSD: src/UPDATING,v 1.20.2.7 2007/11/04 13:52:12 laffer1 Exp $
++$MidnightBSD: src/UPDATING,v 1.20.2.8 2008/04/19 17:19:41 laffer1 Exp $
+Index: src/crypto/openssh/channels.c
+===================================================================
+RCS file: /home/cvs/src/crypto/openssh/channels.c,v
+retrieving revision 1.4
+retrieving revision 1.4.2.1
+diff -u -r1.4 -r1.4.2.1
+--- src/crypto/openssh/channels.c	13 Mar 2007 21:46:01 -0000	1.4
++++ src/crypto/openssh/channels.c	19 Apr 2008 17:18:30 -0000	1.4.2.1
+@@ -2904,9 +2904,6 @@
+ 				debug2("bind port %d: %.100s", port, strerror(errno));
+ 				close(sock);
+ 
+-				if (ai->ai_next)
+-					continue;
+-
+ 				for (n = 0; n < num_socks; n++) {
+ 					close(socks[n]);
+ 				}
+Index: src/crypto/openssh/session.c
+===================================================================
+RCS file: /home/cvs/src/crypto/openssh/session.c,v
+retrieving revision 1.4
+retrieving revision 1.4.2.1
+diff -u -r1.4 -r1.4.2.1
+--- src/crypto/openssh/session.c	13 Mar 2007 21:46:01 -0000	1.4
++++ src/crypto/openssh/session.c	20 Apr 2008 16:53:44 -0000	1.4.2.1
+@@ -1201,8 +1201,9 @@
+ 	do_xauth =
+ 	    s->display != NULL && s->auth_proto != NULL && s->auth_data != NULL;
+ 
+-	/* ignore _PATH_SSH_USER_RC for subsystems */
+-	if (!s->is_subsystem && (stat(_PATH_SSH_USER_RC, &st) >= 0)) {
++	/* ignore _PATH_SSH_USER_RC for subsystems and admin forced commands */
++	if (!s->is_subsystem && options.adm_forced_command == NULL &&
++	    (stat(_PATH_SSH_USER_RC, &st) >= 0)) {
+ 		snprintf(cmd, sizeof cmd, "%s -c '%s %s'",
+ 		    shell, _PATH_BSHELL, _PATH_SSH_USER_RC);
+ 		if (debug_flag)
+Index: src/release/Makefile
+===================================================================
+RCS file: /home/cvs/src/release/Makefile,v
+retrieving revision 1.13.2.2
+retrieving revision 1.13.2.4
+diff -u -r1.13.2.2 -r1.13.2.4
+--- src/release/Makefile	4 Nov 2007 13:44:24 -0000	1.13.2.2
++++ src/release/Makefile	10 Nov 2007 01:34:18 -0000	1.13.2.4
+@@ -1,4 +1,4 @@
+-# $MidnightBSD: src/release/Makefile,v 1.13.2.2 2007/11/04 13:44:24 laffer1 Exp $
++# $MidnightBSD: src/release/Makefile,v 1.13.2.4 2007/11/10 01:34:18 laffer1 Exp $
+ # $FreeBSD: src/release/Makefile,v 1.887.2.6 2006/02/14 01:58:21 hrs Exp $
+ #
+ # make release [BUILDNAME=somename] CHROOTDIR=/some/dir CVSROOT=/cvs/dir \
+@@ -59,7 +59,8 @@
+ ISRELEASE!=	expr "${RELEASETAG}" : '^RELENG_.*_RELEASE$$' || true
+ .if ${ISRELEASE} != 0
+ # Convert "RELENG_ver_RELEASE" to "RELEASE_ver" for mports and doc trees.
+-AUXRELEASETAG!=	echo ${RELEASETAG} | sed -e 's/^RELENG_/RELEASE_/' -e 's/_RELEASE$$//'
++AUXRELEASETAG=	MPORTS_0_1_1_RELEASE
++#echo ${RELEASETAG} | sed -e 's/^RELENG_/RELEASE_/' -e 's/_RELEASE$$//'
+ DOCRELEASETAG?=		${AUXRELEASETAG}
+ PORTSRELEASETAG?=	${AUXRELEASETAG}
+ .endif
+@@ -68,7 +69,7 @@
+ # If you want to pass flags to the world build such as -j X, use
+ # WORLD_FLAGS.  Similarly, you can specify make flags for kernel
+ # builds via KERNEL_FLAGS.
+-#WORLD_FLAGS=-j8
++WORLD_FLAGS=-j8
+ #KERNEL_FLAGS=-j4
+ 
+ TARGET_ARCH?=	${MACHINE_ARCH}
+@@ -111,7 +112,7 @@
+ 
+ # When creating ISO images, point ${CD_PACKAGE_TREE} to a directory containing
+ # the package split by an earlier invocation of the 'package-split' target.
+-#CD_PACKAGE_TREE=	/usr/split
++CD_PACKAGE_TREE=	/usr/split
+ 
+ # Extra source tarballs; each argument is a pair of source dir and
+ # distribution name.  The dist name should not exceed 7 characters
+@@ -153,7 +154,7 @@
+ # Respect DOCDISTFILES which is used before.
+ RELEASEDISTFILES?=	${DOCDISTFILES}
+ .else
+-RELEASEDISTFILES?=	${.CURDIR}/../../mports/distfiles
++RELEASEDISTFILES?=	${.CURDIR}/../../mports/Distfiles
+ .endif
+ # Set this to 1 if you want -P to be used for automatic keyboard detection
+ # on the boot floppy.  WARNING: Breaks on some Athlon (K7) motherboards.
+Index: src/release/scripts/package-split.py
+===================================================================
+RCS file: /home/cvs/src/release/scripts/package-split.py,v
+retrieving revision 1.7.2.3
+retrieving revision 1.7.2.4
+diff -u -r1.7.2.3 -r1.7.2.4
+--- src/release/scripts/package-split.py	4 Nov 2007 13:25:51 -0000	1.7.2.3
++++ src/release/scripts/package-split.py	10 Nov 2007 01:34:18 -0000	1.7.2.4
+@@ -7,7 +7,7 @@
+ #
+ # Usage: package-split.py <INDEX> <master INDEX>
+ #
+-# $MidnightBSD: src/release/scripts/package-split.py,v 1.7.2.3 2007/11/04 13:25:51 laffer1 Exp $
++# $MidnightBSD: src/release/scripts/package-split.py,v 1.7.2.4 2007/11/10 01:34:18 laffer1 Exp $
+ # $FreeBSD: src/release/scripts/package-split.py,v 1.6.2.4 2005/12/07 22:27:49 obrien Exp $
+ 
+ import os
+@@ -61,6 +61,7 @@
+             'emulators/mtools',
+             'ftp/wget',
+             'graphics/cairo',
++            'graphics/libfpx',
+             'graphics/png',
+             'lang/gcc42',
+             'lang/python',
+Index: src/sys/conf/options
+===================================================================
+RCS file: /home/cvs/src/sys/conf/options,v
+retrieving revision 1.4
+retrieving revision 1.4.2.1
+diff -u -r1.4 -r1.4.2.1
+--- src/sys/conf/options	8 Mar 2007 18:51:36 -0000	1.4
++++ src/sys/conf/options	8 Mar 2008 03:20:27 -0000	1.4.2.1
+@@ -686,6 +686,13 @@
+ KBD_RESETDELAY		opt_kbd.h
+ KBDIO_DEBUG		opt_kbd.h
+ 
++# options for Atheros driver
++ATH_DEBUG		opt_ath.h
++ATH_TXBUF		opt_ath.h
++ATH_RXBUF		opt_ath.h
++ATH_DIAGAPI		opt_ath.h
++ATH_TX99_DIAG		opt_ath.h
++
+ # options for the Atheros HAL (only useful with source code)
+ AH_SUPPORT_AR5210	opt_ah.h
+ AH_SUPPORT_AR5211	opt_ah.h
+@@ -693,6 +700,7 @@
+ AH_SUPPORT_5111		opt_ah.h
+ AH_SUPPORT_5112		opt_ah.h
+ AH_SUPPORT_2413		opt_ah.h
++AH_SUPPORT_5413		opt_ah.h
+ AH_DEBUG		opt_ah.h
+ AH_DEBUG_ALQ		opt_ah.h
+ AH_ASSERT		opt_ah.h
+Index: src/sys/dev/random/yarrow.c
+===================================================================
+RCS file: /home/cvs/src/sys/dev/random/yarrow.c,v
+retrieving revision 1.1.1.2
+retrieving revision 1.1.1.2.2.1
+diff -u -r1.1.1.2 -r1.1.1.2.2.1
+--- src/sys/dev/random/yarrow.c	25 Feb 2006 02:36:54 -0000	1.1.1.2
++++ src/sys/dev/random/yarrow.c	29 Nov 2007 17:33:00 -0000	1.1.1.2.2.1
+@@ -298,6 +298,7 @@
+ 				random_state.outputblocks = 0;
+ 			}
+ 			retval += (int)tomove;
++			cur = 0;
+ 		}
+ 	}
+ 	else {
+Index: src/sys/kern/kern_descrip.c
+===================================================================
+RCS file: /home/cvs/src/sys/kern/kern_descrip.c,v
+retrieving revision 1.4
+retrieving revision 1.4.2.1
+diff -u -r1.4 -r1.4.2.1
+--- src/sys/kern/kern_descrip.c	18 Jan 2007 04:04:26 -0000	1.4
++++ src/sys/kern/kern_descrip.c	22 Feb 2008 03:58:10 -0000	1.4.2.1
+@@ -2031,7 +2031,7 @@
+ 	int error;
+ 
+ 	*vpp = NULL;
+-	if ((error = _fget(td, fd, &fp, 0, 0)) != 0)
++	if ((error = _fget(td, fd, &fp, flags, 0)) != 0)
+ 		return (error);
+ 	if (fp->f_vnode == NULL) {
+ 		error = EINVAL;
+Index: src/sys/kern/uipc_syscalls.c
+===================================================================
+RCS file: /home/cvs/src/sys/kern/uipc_syscalls.c,v
+retrieving revision 1.1.1.2
+retrieving revision 1.1.1.2.2.1
+diff -u -r1.1.1.2 -r1.1.1.2.2.1
+--- src/sys/kern/uipc_syscalls.c	25 Feb 2006 02:37:18 -0000	1.1.1.2
++++ src/sys/kern/uipc_syscalls.c	22 Feb 2008 03:58:10 -0000	1.1.1.2.2.1
+@@ -1762,7 +1762,7 @@
+ do_sendfile(struct thread *td, struct sendfile_args *uap, int compat)
+ {
+ 	struct vnode *vp;
+-	struct vm_object *obj;
++	struct vm_object *obj = NULL;
+ 	struct socket *so = NULL;
+ 	struct mbuf *m, *m_header = NULL;
+ 	struct sf_buf *sf;
+@@ -1783,7 +1783,8 @@
+ 	if ((error = fgetvp_read(td, uap->fd, &vp)) != 0)
+ 		goto done;
+ 	vn_lock(vp, LK_EXCLUSIVE | LK_RETRY, td);
+-	obj = vp->v_object;
++	if (vp->v_type == VREG)
++		obj = vp->v_object;
+ 	VOP_UNLOCK(vp, 0, td);
+ 	if (obj == NULL) {
+ 		error = EINVAL;
+Index: src/sys/sys/copyright.h
+===================================================================
+RCS file: /home/cvs/src/sys/sys/copyright.h,v
+retrieving revision 1.3
+retrieving revision 1.3.2.1
+diff -u -r1.3 -r1.3.2.1
+--- src/sys/sys/copyright.h	31 Dec 2006 22:42:22 -0000	1.3
++++ src/sys/sys/copyright.h	1 Jan 2008 17:05:32 -0000	1.3.2.1
+@@ -30,7 +30,7 @@
+ 
+ /* MidnightBSD */
+ #define COPYRIGHT_MidnightBSD \
+-	"Copyright (c) 2006-2007 The MidnightBSD Project.\n"
++	"Copyright (c) 2006-2008 The MidnightBSD Project.\n"
+   
+ /* FreeBSD */
+ #define COPYRIGHT_FreeBSD \
+Index: src/sys/sys/param.h
+===================================================================
+RCS file: /home/cvs/src/sys/sys/param.h,v
+retrieving revision 1.5.2.4
+retrieving revision 1.5.2.5
+diff -u -r1.5.2.4 -r1.5.2.5
+--- src/sys/sys/param.h	4 Nov 2007 13:33:09 -0000	1.5.2.4
++++ src/sys/sys/param.h	19 Apr 2008 17:21:36 -0000	1.5.2.5
+@@ -60,7 +60,7 @@
+ #define __FreeBSD_version 601000	/* Master, propagated to newvers */
+ 
+ #undef __MidnightBSD_version
+-#define __MidnightBSD_version	001010
++#define __MidnightBSD_version	001011
+ 
+ #ifndef LOCORE
+ #include <sys/types.h>
+Index: src/sys/sys/sx.h
+===================================================================
+RCS file: /home/cvs/src/sys/sys/sx.h,v
+retrieving revision 1.1.1.1
+retrieving revision 1.1.1.1.2.1
+diff -u -r1.1.1.1 -r1.1.1.1.2.1
+--- src/sys/sys/sx.h	25 Feb 2006 02:28:44 -0000	1.1.1.1
++++ src/sys/sys/sx.h	20 Apr 2008 16:55:46 -0000	1.1.1.1.2.1
+@@ -76,6 +76,7 @@
+ 	SYSUNINIT(name##_sx_sysuninit, SI_SUB_LOCK, SI_ORDER_MIDDLE,	\
+ 	    sx_destroy, (sxa))
+ 
++#define	sx_xlocked(sx)		((sx)->sx_cnt < 0 && (sx)->sx_xholder == curthread)
+ #define	sx_slock(sx)		_sx_slock((sx), LOCK_FILE, LOCK_LINE)
+ #define	sx_xlock(sx)		_sx_xlock((sx), LOCK_FILE, LOCK_LINE)
+ #define	sx_try_slock(sx)	_sx_try_slock((sx), LOCK_FILE, LOCK_LINE)
+@@ -84,13 +85,12 @@
+ #define	sx_xunlock(sx)		_sx_xunlock((sx), LOCK_FILE, LOCK_LINE)
+ #define	sx_try_upgrade(sx)	_sx_try_upgrade((sx), LOCK_FILE, LOCK_LINE)
+ #define	sx_downgrade(sx)	_sx_downgrade((sx), LOCK_FILE, LOCK_LINE)
+-#define	sx_unlock(sx)	\
+-		do { \
+-			if ((sx)->sx_cnt < 0) \
+-				sx_xunlock(sx); \
+-			else \
+-				sx_sunlock(sx); \
+-		} while (0)
++#define	sx_unlock(sx) do {						\
++	if (sx_xlocked(sx))						\
++		sx_xunlock(sx);						\
++	else								\
++		sx_sunlock(sx);						\
++} while (0)
+ 
+ #if defined(INVARIANTS) || defined(INVARIANT_SUPPORT)
+ #define	SX_LOCKED		LA_LOCKED
+Index: src/tools/tools/tinderbox/Makefile
+===================================================================
+RCS file: /home/cvs/src/tools/tools/tinderbox/Makefile,v
+retrieving revision 1.1.1.1
+retrieving revision 1.1.1.1.2.1
+diff -u -r1.1.1.1 -r1.1.1.1.2.1
+--- src/tools/tools/tinderbox/Makefile	25 Feb 2006 02:29:00 -0000	1.1.1.1
++++ src/tools/tools/tinderbox/Makefile	4 Mar 2008 03:06:59 -0000	1.1.1.1.2.1
+@@ -1,3 +1,4 @@
++# $MidnightBSD: src/tools/tools/tinderbox/Makefile,v 1.1.1.1.2.1 2008/03/04 03:06:59 laffer1 Exp $
+ # $FreeBSD: src/tools/tools/tinderbox/Makefile,v 1.9 2003/08/01 07:24:30 des Exp $
+ 
+ BINDIR		?= ${HOME}/bin
+Index: src/tools/tools/tinderbox/tbmaster.pl
+===================================================================
+RCS file: /home/cvs/src/tools/tools/tinderbox/tbmaster.pl,v
+retrieving revision 1.1.1.1
+retrieving revision 1.1.1.1.2.1
+diff -u -r1.1.1.1 -r1.1.1.1.2.1
+--- src/tools/tools/tinderbox/tbmaster.pl	25 Feb 2006 02:29:00 -0000	1.1.1.1
++++ src/tools/tools/tinderbox/tbmaster.pl	4 Mar 2008 03:06:59 -0000	1.1.1.1.2.1
+@@ -27,6 +27,7 @@
+ # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ #
+ # $FreeBSD: src/tools/tools/tinderbox/tbmaster.pl,v 1.53 2005/03/03 07:18:01 des Exp $
++# $MidnightBSD: src/tools/tools/tinderbox/tbmaster.pl,v 1.1.1.1.2.1 2008/03/04 03:06:59 laffer1 Exp $
+ #
+ 
+ use 5.006_001;
+@@ -393,7 +394,7 @@
+ ###
+ sub usage() {
+ 
+-    print(STDERR "This is the FreeBSD tinderbox manager, version $VERSION.
++    print(STDERR "This is the BSD tinderbox manager, version $VERSION.
+ $COPYRIGHT
+ 
+ Usage:
+@@ -407,7 +408,6 @@
+   -e, --etcdir=DIR              Configuration directory
+   -l, --lockfile=FILE           Lock file name
+ 
+-Report bugs to <des\@freebsd.org>.
+ ");
+     print(STDERR "usage: tbmaster\n");
+     exit(1);
+Index: src/tools/tools/tinderbox/tinderbox.pl
+===================================================================
+RCS file: /home/cvs/src/tools/tools/tinderbox/tinderbox.pl,v
+retrieving revision 1.1.1.1
+retrieving revision 1.1.1.1.2.1
+diff -u -r1.1.1.1 -r1.1.1.1.2.1
+--- src/tools/tools/tinderbox/tinderbox.pl	25 Feb 2006 02:29:01 -0000	1.1.1.1
++++ src/tools/tools/tinderbox/tinderbox.pl	4 Mar 2008 03:06:59 -0000	1.1.1.1.2.1
+@@ -27,6 +27,7 @@
+ # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ #
+ # $FreeBSD: src/tools/tools/tinderbox/tinderbox.pl,v 1.42 2005/04/30 18:22:12 des Exp $
++# $MidnightBSD: src/tools/tools/tinderbox/tinderbox.pl,v 1.1.1.1.2.1 2008/03/04 03:06:59 laffer1 Exp $
+ #
+ 
+ use 5.006_001;
+@@ -254,7 +255,7 @@
+ 
+ sub usage() {
+ 
+-    print(STDERR "This is the FreeBSD tinderbox script, version $VERSION.
++    print(STDERR "This is the BSD tinderbox script, version $VERSION.
+ $COPYRIGHT
+ 
+ Usage:
+@@ -284,7 +285,6 @@
+   lint                          Build the LINT kernel
+   release                       Build a full release (run as root!)
+ 
+-Report bugs to <des\@freebsd.org>.
+ ");
+     exit(1);
+ }
+@@ -306,7 +306,7 @@
+     chomp($machine);
+     $branch = "CURRENT";
+     $jobs = 0;
+-    $repository = "/home/ncvs";
++    $repository = "/home/cvs";
+     $sandbox = "/tmp/tinderbox";
+     $timeout = 0;
+ 
+Index: src/tools/tools/tinderbox/etc/Makefile
+===================================================================
+RCS file: /home/cvs/src/tools/tools/tinderbox/etc/Makefile,v
+retrieving revision 1.1.1.1
+retrieving revision 1.1.1.1.2.1
+diff -u -r1.1.1.1 -r1.1.1.1.2.1
+--- src/tools/tools/tinderbox/etc/Makefile	25 Feb 2006 02:29:01 -0000	1.1.1.1
++++ src/tools/tools/tinderbox/etc/Makefile	4 Mar 2008 03:06:59 -0000	1.1.1.1.2.1
+@@ -1,10 +1,9 @@
++# $MidnightBSD: src/tools/tools/tinderbox/etc/Makefile,v 1.1.1.1.2.1 2008/03/04 03:06:59 laffer1 Exp $
+ # $FreeBSD: src/tools/tools/tinderbox/etc/Makefile,v 1.9 2004/08/19 07:28:30 des Exp $
+ 
+ ETCFILES	 =
+ ETCFILES	+= default.rc
+-ETCFILES	+= releng_4.rc update_releng_4.rc
+-ETCFILES	+= releng_5.rc update_releng_5.rc
+-ETCFILES	+= stable.rc update_stable.rc
++ETCFILES	+= releng_0_1.rc update_releng_0_1.rc
+ ETCFILES	+= current.rc update_current.rc
+ ETCDIR		?= ${HOME}/etc
+ ETCOWN		?= ${USER}
+Index: src/tools/tools/tinderbox/etc/current.rc
+===================================================================
+RCS file: /home/cvs/src/tools/tools/tinderbox/etc/current.rc,v
+retrieving revision 1.1.1.1
+retrieving revision 1.1.1.1.2.1
+diff -u -r1.1.1.1 -r1.1.1.1.2.1
+--- src/tools/tools/tinderbox/etc/current.rc	25 Feb 2006 02:29:01 -0000	1.1.1.1
++++ src/tools/tools/tinderbox/etc/current.rc	4 Mar 2008 03:06:59 -0000	1.1.1.1.2.1
+@@ -1,11 +1,12 @@
+ #
+ # CURRENT tinderbox setup
+ #
++# $MidnightBSD: src/tools/tools/tinderbox/etc/current.rc,v 1.1.1.1.2.1 2008/03/04 03:06:59 laffer1 Exp $
+ # $FreeBSD: src/tools/tools/tinderbox/etc/current.rc,v 1.8 2004/03/16 00:24:54 des Exp $
+ #
+ 
+ branches	= CURRENT
+-platforms	= alpha, amd64, i386/i386, i386/pc98, ia64, powerpc, sparc64
++platforms	= amd64, i386/i386, sparc64
+ cflags		= -O2 -pipe
+ coptflags	= %%CFLAGS%%
+-recipient	= %%SENDER%%,<current@freebsd.org>,<%%arch%%@freebsd.org>
++recipient	= %%SENDER%%,<luke@midnightbsd.org>
+Index: src/tools/tools/tinderbox/etc/default.rc
+===================================================================
+RCS file: /home/cvs/src/tools/tools/tinderbox/etc/default.rc,v
+retrieving revision 1.1.1.1
+retrieving revision 1.1.1.1.2.1
+diff -u -r1.1.1.1 -r1.1.1.1.2.1
+--- src/tools/tools/tinderbox/etc/default.rc	25 Feb 2006 02:29:01 -0000	1.1.1.1
++++ src/tools/tools/tinderbox/etc/default.rc	4 Mar 2008 03:06:59 -0000	1.1.1.1.2.1
+@@ -1,6 +1,7 @@
+ #
+ # Tinderbox defaults
+ #
++# $MidnightBSD: src/tools/tools/tinderbox/etc/default.rc,v 1.1.1.1.2.1 2008/03/04 03:06:59 laffer1 Exp $
+ # $FreeBSD: src/tools/tools/tinderbox/etc/default.rc,v 1.9 2005/04/30 18:26:05 des Exp $
+ #
+ 
+@@ -16,6 +17,6 @@
+ #timeout 	= 7200
+ 
+ # Reporting
+-sender		= FreeBSD Tinderbox <tinderbox@freebsd.org>
++sender		= MidnightBSD Tinderbox <tinderbox@midnightbsd.org>
+ recipient	= %%SENDER%%
+ subject		= [%%COMMENT%%] failure on %%arch%%/%%machine%%
+Index: src/tools/tools/tinderbox/etc/update_current.rc
+===================================================================
+RCS file: /home/cvs/src/tools/tools/tinderbox/etc/update_current.rc,v
+retrieving revision 1.1.1.1
+retrieving revision 1.1.1.1.2.1
+diff -u -r1.1.1.1 -r1.1.1.1.2.1
+--- src/tools/tools/tinderbox/etc/update_current.rc	25 Feb 2006 02:29:01 -0000	1.1.1.1
++++ src/tools/tools/tinderbox/etc/update_current.rc	4 Mar 2008 03:06:59 -0000	1.1.1.1.2.1
+@@ -1,4 +1,5 @@
++# $MidnightBSD: src/tools/tools/tinderbox/etc/update_current.rc,v 1.1.1.1.2.1 2008/03/04 03:06:59 laffer1 Exp $
+ # $FreeBSD: src/tools/tools/tinderbox/etc/update_current.rc,v 1.1 2004/06/14 11:36:00 des Exp $
+ branches	= CURRENT
+-platforms	= alpha, amd64, i386/i386, i386/pc98, ia64, powerpc, sparc64
++platforms	= amd64, i386/i386, sparc64
+ targets		= update
+Index: src/tools/tools/tinderbox/www/Makefile
+===================================================================
+RCS file: /home/cvs/src/tools/tools/tinderbox/www/Makefile,v
+retrieving revision 1.1.1.1
+retrieving revision 1.1.1.1.2.1
+diff -u -r1.1.1.1 -r1.1.1.1.2.1
+--- src/tools/tools/tinderbox/www/Makefile	25 Feb 2006 02:29:01 -0000	1.1.1.1
++++ src/tools/tools/tinderbox/www/Makefile	4 Mar 2008 03:06:59 -0000	1.1.1.1.2.1
+@@ -1,3 +1,4 @@
++# $MidnightBSD: src/tools/tools/tinderbox/www/Makefile,v 1.1.1.1.2.1 2008/03/04 03:06:59 laffer1 Exp $
+ # $FreeBSD: src/tools/tools/tinderbox/www/Makefile,v 1.6 2004/01/25 19:11:43 des Exp $
+ 
+ CGI		 = index.cgi
+Index: src/tools/tools/tinderbox/www/index.cgi
+===================================================================
+RCS file: /home/cvs/src/tools/tools/tinderbox/www/index.cgi,v
+retrieving revision 1.1.1.1
+retrieving revision 1.1.1.1.2.1
+diff -u -r1.1.1.1 -r1.1.1.1.2.1
+--- src/tools/tools/tinderbox/www/index.cgi	25 Feb 2006 02:29:01 -0000	1.1.1.1
++++ src/tools/tools/tinderbox/www/index.cgi	4 Mar 2008 03:06:59 -0000	1.1.1.1.2.1
+@@ -27,6 +27,7 @@
+ # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ #
+ # $FreeBSD: src/tools/tools/tinderbox/www/index.cgi,v 1.25 2005/02/07 07:55:00 des Exp $
++# $MidnightBSD: src/tools/tools/tinderbox/www/index.cgi,v 1.1.1.1.2.1 2008/03/04 03:06:59 laffer1 Exp $
+ #
+ 
+ use 5.006_001;
+@@ -169,14 +170,14 @@
+      'http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd'>
+ <html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en' lang='en'>
+   <head>
+-    <title>FreeBSD tinderbox logs</title>
++    <title>BSD tinderbox logs</title>
+     <meta name='robots' content='nofollow' />
+     <meta http-equiv='refresh' content='600' />
+     <link rel='stylesheet' type='text/css' media='screen' href='tb.css' />
+     <link rel='shortcut icon' type='image/png' href='daemon.png' />
+   </head>
+   <body>
+-    <!-- h1>FreeBSD tinderbox logs</h1 -->
++    <!-- h1>BSD tinderbox logs</h1 -->
+ 
+     <table border='1' cellpadding='3'>
+ ";
