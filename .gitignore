@@ -58,3 +58,4 @@ CVS
 pass
 bin/findstamps
 bin/unstamp
+pub/*
