@@ -4,7 +4,7 @@ How to use the FreeBSD Update build code
 ========================================
 
 0. Extract the files in this directory and the src, scripts, and 
-patches subdirectories somewhere; /usr/freebsd-update-server/ is a
+patches subdirectories somewhere; /usr/midnightbsd-update-server/ is a
 good option.
 
 1. Edit scripts/build.conf as appropriate.
@@ -15,7 +15,7 @@ enter a passphrase with which to encrypt the signing key.
 
 3. Run `scripts/init.sh ${ARCHITECTURE} ${RELEASE}' for each pair
 (architecture, release) for which you want to be able to build updates.
-Note that as of 6.1-RELEASE, cross-building releases doesn't work (some
+Note that as of 0.1.1-RELEASE, cross-building releases doesn't work (some
 files don't cross-build correctly); but once those problems are fixed
 it will be possible to cross build updates.
 
@@ -59,7 +59,7 @@ the other(s) run `encryptkey.sh' to save a copy of the key encrypted
 with their own passphrase.  (Obviously, everybody involved must use
 su or sudo to become root in order to do this.)
 
-* If you want to distribute and update a customized version of FreeBSD,
+* If you want to distribute and update a customized version of MidnightBSD,
 there are two options:
 
   1. Building a custom release.  If you have a custom release and the

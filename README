@@ -1,6 +1,6 @@
-$FreeBSD: projects/freebsd-update-server/README,v 1.1 2006/08/31 07:48:40 cperciva Exp $
+This directory contains MidnightBSD Update build code.
 
-This directory contains FreeBSD Update build code.
+(based on FreeBSD update build code from Colin Perciva)
 
 File				Description
 ----				-----------
@@ -10,7 +10,7 @@ scripts/build.conf		Configuration settings.
 
 scripts/*.sh			User-accessible scripts.
 
-scripts/X.Y-Z/bar/build.conf	Configuration for FreeBSD/bar X.Y-Z
+scripts/X.Y-Z/bar/build.conf	Configuration for MidnightBSD/bar X.Y-Z
 
 scripts/X.Y-Z/build.subr and	These files, if present, can override
 scripts/X.Y-Z/bar/build.subr	the routines defined in scripts/build.subr
@@ -25,15 +25,15 @@ src/findstamp.c			Utility for comparing two binaries which
 src/unstamp.c			Utility for erasing timestamps found by
 				findstamp.c.
 
-patches/X.Y-Z/0-*		Patches to FreeBSD X.Y-Z which we pretend
-				were part of the release.  In FreeBSD 5.5
-				and FreeBSD 6.0 some of these are necessary
+patches/X.Y-Z/0-*		Patches to MidnightBSD X.Y-Z which we pretend
+				were part of the release.  In MidnightBSD 5.5
+				and MidnightBSD 6.0 some of these are necessary
 				in order to get rid of some problematic
 				timestamps.
 
-patches/X.Y-Z/W-*		Patches to FreeBSD X.Y-Z.  These are applied
+patches/X.Y-Z/W-*		Patches to MidnightBSD X.Y-Z.  These are applied
 				in order of increasing W (assuming it is an
 				integer), so a naming convention of setting
-				W equal to the FreeBSD patch level (e.g., 9
-				for FreeBSD 6.0-RELEASE-p9) is strongly
+				W equal to the MidnightBSD patch level (e.g., 9
+				for MidnightBSD 0.2-RELEASE-p9) is strongly
 				recommended.
